@@ -1,0 +1,69 @@
+version: '3'
+
+services:
+  mariadb:
+    container_name: mariadb # Le nom du container
+    image: mariadb
+    build:
+      context: requirements/mariadb # Où se trouve son Dockerfile
+      dockerfile: Dockerfile
+    env_file: .env                  # Le fichier d'environnement pour transmettre les variables
+    restart: unless-stopped         # Redémarre tant qu'il n'est pas stoppé 
+    networks:
+      - inception                   # À quel network il appartient
+    volumes:                        
+      - mariadb_vol:/var/lib/mysql
+    expose:                         # Le port à exposer en interne
+      - "3306"
+
+  wordpress:
+    container_name: wordpress
+    image: wordpress
+    build:
+      context: requirements/wordpress
+      dockerfile: Dockerfile
+    env_file: .env
+    restart: on-failure             # Le container redémarrera uniquement en cas de crash
+    depends_on:                     # WordPress démarrera uniquement après MariaDB
+      - mariadb
+    networks:
+      - inception
+    volumes:
+      - wordpress_vol:/var/www/wordpress
+    expose:
+      - "9000"
+
+  nginx:
+    container_name: nginx
+    image: nginx
+    build:
+      context: requirements/nginx
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - "443:443"                   # On indique le port qui sera exposé à la machine locale
+    restart: on-failure
+    depends_on:                     # Indique de ne pas démarrer NGINX tant que WordPress n'a pas démarré
+      - wordpress
+    networks:
+      - inception
+    volumes:
+      - wordpress_vol:/var/www/wordpress
+
+networks:
+  inception:
+    driver: bridge                  # Indique à Docker d’installer automatiquement un réseau bridge
+
+volumes:
+  wordpress_vol:
+    driver: local                   # Ici nous stockons le volume en local
+    driver_opts:
+      type: 'none'                  # Aucun type spécifique
+      o: 'bind'
+      device: '/home/aarab/data/wordpress' # Où stocker le dossier sur votre machine en local
+  mariadb_vol:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'                     # Les Bind Mounts sont des volumes qui se montent sur un chemin d'accès à l'hôte
+      device: '/home/aarab/data/mariadb' # Où stocker le dossier sur votre machine en local
