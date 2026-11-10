@@ -23,7 +23,7 @@ services:
       context: requirements/wordpress
       dockerfile: Dockerfile
     env_file: .env
-    restart: on-failure             # Le container redémarrera uniquement en cas de crash
+    restart: unless-stopped          # Redémarre tant qu'il n'est pas stoppé 
     depends_on:                     # WordPress démarrera uniquement après MariaDB
       - mariadb
     networks:
@@ -42,7 +42,7 @@ services:
     env_file: .env
     ports:
       - "443:443"                   # On indique le port qui sera exposé à la machine locale
-    restart: on-failure
+    restart: unless-stopped         # Redémarre tant qu'il n'est pas stoppé 
     depends_on:                     # Indique de ne pas démarrer NGINX tant que WordPress n'a pas démarré
       - wordpress
     networks:

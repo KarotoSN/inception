@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Attente active que MariaDB soit prêt à accepter des connexions (max 30 tentatives)
+tries=0
+while ! mariadb -h mariadb -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "SELECT 1;" >/dev/null 2>&1; do
+    tries=$((tries + 1))
+    if [ $tries -ge 30 ]; then
+        echo "Erreur : MariaDB ne répond pas."
+        exit 1
+    fi
+    echo "En attente de MariaDB..."
+    sleep 2
+done
+
 # On vérifie si WordPress est déjà installé (pour ne pas tout écraser si le conteneur redémarre)
 if [ ! -f /var/www/wordpress/wp-config.php ]; then
     echo "Installation de WordPress..."
